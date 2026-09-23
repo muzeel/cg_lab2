@@ -45,20 +45,56 @@ class HSVApp:
         self.hsv_base = cv2.cvtColor(self.img_bgr, cv2.COLOR_BGR2HSV)
         self.update()
 
+    def hsv_to_rgb(self,h, s, v):
+        hf = (h * 2.0) % 360.0
+        sf = s / 255.0
+        vf = v / 255.0
+        c = vf * sf
+        x = c * (1.0 - abs((hf / 60.0) % 2.0 - 1.0))
+        m = vf - c
+
+        if hf < 60:
+            rp, gp, bp = c, x, 0.0
+        elif hf < 120:
+            rp, gp, bp = x, c, 0.0
+        elif hf < 180:
+            rp, gp, bp = 0.0, c, x
+        elif hf < 240:
+            rp, gp, bp = 0.0, x, c
+        elif hf < 300:
+            rp, gp, bp = x, 0.0, c
+        else:
+            rp, gp, bp = c, 0.0, x
+
+        return (int(round((rp + m) * 255)),
+                int(round((gp + m) * 255)),
+                int(round((bp + m) * 255)))
+
     def update(self):
         if self.hsv_base is None:
             return
-        h, s, v = cv2.split(self.hsv_base.astype(np.int16))
-        h = (h + self.dh.get()) % 180
-        s = np.clip(s + self.ds.get(), 0, 255)
-        v = np.clip(v + self.dv.get(), 0, 255)
-        hsv_mod = cv2.merge([h, s, v]).astype(np.uint8)
-        self.result_bgr = cv2.cvtColor(hsv_mod, cv2.COLOR_HSV2BGR)
+        dh, ds, dv = self.dh.get(), self.ds.get(), self.dv.get()
+        h_img, w_img = self.hsv_base.shape[:2]
 
-        rgb = cv2.cvtColor(self.result_bgr, cv2.COLOR_BGR2RGB)
-        img = Image.fromarray(rgb)
-        img.thumbnail((700, 500))
-        self.tk_img = ImageTk.PhotoImage(img)
+        img = Image.new("RGB", (w_img, h_img))
+        po = img.load()
+        for y in range(h_img):
+            for x in range(w_img):
+                h = int(self.hsv_base[y, x, 0])
+                s = int(self.hsv_base[y, x, 1])
+                v = int(self.hsv_base[y, x, 2])
+
+                h = (h + dh) % 180
+                s = max(0, min(255, s + ds))
+                v = max(0, min(255, v + dv))
+
+                po[x, y] = self.hsv_to_rgb(h, s, v)
+
+        self.result_bgr = np.array(img)[:, :, ::-1].copy()
+
+        preview = img.copy()
+        preview.thumbnail((700, 500))
+        self.tk_img = ImageTk.PhotoImage(preview)
         self.label.config(image=self.tk_img)
 
     def save_image(self):

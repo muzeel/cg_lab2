@@ -5,7 +5,7 @@ import matplotlib
 matplotlib.use("TkAgg")
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
+import numpy as np
 def gray_1(img):
     pixels = img.load()
     width, height = img.size
@@ -37,15 +37,22 @@ def diff(a, b):
     return out
 
 
-
 def show_hist(ax, canvas, img):
     ax.clear()
     h = img.histogram()
-    ax.plot(h[0:256], 'r', lw=0.8)
-    ax.plot(h[256:512], 'g', lw=0.8)
-    ax.plot(h[512:768], 'b', lw=0.8)
+    x = np.arange(256)
+
+    r = h[0:256]
+    g = h[256:512]
+    b = h[512:768]
+    ax.bar(x, r, color='r', alpha=0.5, width=1.0, label='Red')
+    ax.bar(x, g, color='g', alpha=0.5, width=1.0, label='Green')
+    ax.bar(x, b, color='b', alpha=0.5, width=1.0, label='Blue')
+
     ax.set_title("Гистограмма", fontsize=9)
+    ax.set_xlim([0, 255])
     canvas.draw()
+
 
 def open_file():
     path = filedialog.askopenfilename(
